@@ -291,21 +291,17 @@ function sortCitiesArray(arr) {
  *   }
  */
 function group(array, keySelector, valueSelector) {
-  const result = new Map();
-
-  array.forEach((item) => {
+  return array.reduce((result, item) => {
     const key = keySelector(item);
     const value = valueSelector(item);
 
-    if (!result.has(key)) {
-      result.set(key, [value]);
+    if (result.has(key)) {
+      result.get(key).push(value);
     } else {
-      const arr = result.get(key);
-      arr.push(value);
+      result.set(key, [value]);
     }
-  });
-
-  return result;
+    return result;
+  }, new Map());
 }
 
 /**

@@ -19,9 +19,7 @@
  */
 function shallowCopy(obj) {
   const result = {};
-  Object.assign(result, obj);
-
-  return result;
+  return Object.assign(result, obj);
 }
 
 /**
@@ -105,7 +103,7 @@ function compareObjects(obj1, obj2) {
  *    isEmptyObject({a: 1}) => false
  */
 function isEmptyObject(obj) {
-  return Object.keys(obj).length === 0;
+  return !Object.keys(obj).length;
 }
 
 /**

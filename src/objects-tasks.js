@@ -358,35 +358,84 @@ function group(array, keySelector, valueSelector) {
  *  For more examples see unit tests.
  */
 
-const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
-  },
-
-  id(/* value */) {
-    throw new Error('Not implemented');
-  },
-
-  class(/* value */) {
-    throw new Error('Not implemented');
-  },
-
-  attr(/* value */) {
-    throw new Error('Not implemented');
-  },
-
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
-  },
-
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
-  },
-
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
-  },
+const err = {
+  calledTwice: Error(
+    'Element, id and pseudo-element should not occur more then one time inside the selector'
+  ),
+  invalidCallsOrder: Error(
+    'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+  ),
 };
+
+const CALLED_ONCE = new Set(['element', 'id', 'pseudoElement']);
+
+const CALLS_ORDER = 'element id class attr pseudoClass pseudoElement'.split(
+  ' '
+);
+
+class SelectorBuilder {
+  #value = '';
+
+  #callsChain = [];
+
+  constructor(initialSelectorStr) {
+    this.#value = String(initialSelectorStr ?? '');
+  }
+
+  #checkCallsOrder(actionName) {
+    const actionIdx = CALLS_ORDER.indexOf(actionName);
+    const next = CALLS_ORDER.slice(actionIdx + 1);
+
+    this.#callsChain.forEach((name) => {
+      if (next.includes(name)) {
+        throw err.invalidCallsOrder;
+      }
+    });
+  }
+
+  #addCall(name) {
+    if (CALLED_ONCE.has(name) && this.#callsChain.includes(name)) {
+      throw err.calledTwice;
+    }
+    this.#checkCallsOrder(name);
+
+    this.#callsChain.push(name);
+  }
+
+  #append(selectorStr, actionName) {
+    if (this.#callsChain.length === 0) {
+      const instance = new SelectorBuilder(selectorStr);
+      instance.#addCall(actionName);
+
+      return instance;
+    }
+    this.#value += selectorStr;
+    this.#addCall(actionName);
+
+    return this;
+  }
+
+  element = (v) => this.#append(v, this.element.name);
+
+  id = (v) => this.#append(`#${v}`, this.id.name);
+
+  class = (v) => this.#append(`.${v}`, this.class.name);
+
+  attr = (v) => this.#append(`[${v}]`, this.attr.name);
+
+  pseudoClass = (v) => this.#append(`:${v}`, this.pseudoClass.name);
+
+  pseudoElement = (v) => this.#append(`::${v}`, this.pseudoElement.name);
+
+  stringify = () => this.#value;
+
+  combine(selector1, combinator, selector2) {
+    this.#value = `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+    return this;
+  }
+}
+
+const cssSelectorBuilder = new SelectorBuilder();
 
 module.exports = {
   shallowCopy,

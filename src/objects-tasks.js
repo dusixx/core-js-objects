@@ -367,7 +367,7 @@ const err = {
   ),
 };
 
-const CALLED_ONCE = new Set(['element', 'id', 'pseudoElement']);
+const MUST_BE_CALLED_ONCE = new Set(['element', 'id', 'pseudoElement']);
 
 const CALLS_ORDER = 'element id class attr pseudoClass pseudoElement'.split(
   ' '
@@ -393,8 +393,15 @@ class SelectorBuilder {
     });
   }
 
+  #isAlreadyBeenCalled(actionName) {
+    return (
+      MUST_BE_CALLED_ONCE.has(actionName) &&
+      this.#callsChain.includes(actionName)
+    );
+  }
+
   #addCall(name) {
-    if (CALLED_ONCE.has(name) && this.#callsChain.includes(name)) {
+    if (this.#isAlreadyBeenCalled(name)) {
       throw err.calledTwice;
     }
     this.#checkCallsOrder(name);
